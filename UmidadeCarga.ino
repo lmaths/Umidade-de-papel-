@@ -7,38 +7,51 @@ LiquidCrystal lcd(16,5,4,0,2,14);
 
 
 #define pinDigital 12
+#define pinA 0
 
 
 void setup()  {
-  Serial.begin(9600);
+  Serial.begin(1200);
   lcd.begin(16,2);
   pinMode(pinDigital, INPUT);
 
 }
 
 void loop() {
-  if(digitalRead(pinDigital)) {
-    
-    Serial.print("Sem Umidade");
-    lcd.setCursor(3,0);
-    lcd.print("Carga:");
+  Serial.print("Valor ");
+  Serial.print ("");
+  Serial.print(analogRead(pinA));
+
+
+  if(analogRead(pinA) >= 800) {
+   Serial.print(" Aprovada ");
+
+   lcd.setCursor(3,0);
+    lcd.print("Aprovada:");
     lcd.setCursor(3,1);
-    lcd.print("Aprovada");
+    lcd.print(analogRead(pinA));
 
     delay(5000);
-
-    lcd.clear();
-  } else {
-    
-    Serial.print("Com Umidade");
-    lcd.setCursor(3,0);
-    lcd.print("Carga");
+   
+  }else if (analogRead(pinA) <= 650) {
+    Serial.print(" Reprovada ");
+     lcd.setCursor(3,0);
+    lcd.print("Reprovada:");
     lcd.setCursor(3,1);
-    lcd.print("Reprovada");
+    lcd.print(analogRead(pinA));
 
-     delay(5000);
+    delay(5000);
+  }else {
+    Serial.print(" Aprovada com desconto ");
+     lcd.setCursor(3,0);
+    lcd.print("Desconto:");
+    lcd.setCursor(3,1);
+    lcd.print(analogRead(pinA));
 
-    lcd.clear();
+    delay(5000);
   }
+
+
+  
 
 }
