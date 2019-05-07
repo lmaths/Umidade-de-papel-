@@ -1,85 +1,133 @@
-#include <ESP8266WiFi.h>
-#include <WiFiClient.h>
 #include <ESP8266WebServer.h>
-#include <ESP8266mDNS.h>
 
-#ifndef STASSID
-#define STASSID "TP-LINK_6642"
-#define STAPSK  "40462929"
-#define pin 0
-
-#endif
-
-const char* ssid = STASSID;
-const char* password = STAPSK;
-const char index_html[] PROGMEM={"<style>\n  body {\n  padding-top: 80px;\n  text-align: center;\n  font-family: monaco, monospace;\n  background: url(http://media.giphy.com/media/Jrd9E2kuPuOYM/giphy.gif) 50%;\n  background-size: cover;\n}\nh1, h2 {\n  display: inline-block;\n  background: #fff;\n}\nh1 {\n  font-size: 30px\n}\nh2 {\n  font-size: 20px;\n}\nspan {\n  background: #fd0;\n}\n</style>\n\n<html>\n<h1>Sistema para controle de umidade <span>de carga</span></h1><br>\n<h2></h2>\n\n\n</html>"};
-
+//---------------------------------------------------------------
 ESP8266WebServer server(80);
 
+//-------------------VARIABLES GLOBALES--------------------------
+int contconexion = 0;
 
+const char *ssid = "TP-LINK_6642";
+const char *password = "40462929";
 
-void handleRoot() {
+String XML, xmlTemperatura; 
 
-  if(analogRead(pin) >= 500) {
-     server.send_P(200, "text/html", index_html);
- } else {
-    Serial.print("não foi possivel");
- }
+unsigned long previousMillis = 0;
 
+//--------CODIGO HTML y JavaScript-------------
+String webSite = "<!DOCTYPE html>"
+"<style>"
+  "body {"
+  "padding-top: 80px;"
+  "text-align: center;"
+ "font-family: monaco, monospace;"
+  "background: url(https://www.smurfitkappa.com/-/media/video/english-videos/about_us_homepage_page_only.jpg?w=1366&h=450&hash=A36B8E8121A827A32B4487A128727A779CF73F7A) 50%;"
+  "background-size: cover;"
+  "background-repeat: no-repeat;"
+"}"
+"h1, h2, h3 {"
+  "display: inline-block;"
+  "background: #fff;"
+"}"
+"#imgpos {"
+  "position: absolute; "
+  "left: 35px; /* posiciona a 90px para a esquerda */ "
+  "top: 25px; /* posiciona a 70px para baixo */"
+  "}"
+"h1 {"
+  "font-size: 30px"
+"}"
+"h2 {"
+  "font-size: 20px;"
+"}"
+"span {"
+  "background: #fd0;"
+"}"
+"</style>"
+"<html>"
+"<head>"
+"<meta charset='utf-8' />"
+"<title>Controle de Umidade</title>"
+"<h1> - Sistema para controle de <span> Umidade -</span></h1><br>"
+"<img src='https://i.imgur.com/DQ43Q9e.png' alt='some text' width=250 height=45 id='imgpos'>"
+"<script type='text/javascript'>"
+"function loadDoc(){"
+"  var xhttp = new XMLHttpRequest();"
+"  xhttp.onreadystatechange = function() {"
+"    if (this.readyState == 4 && this.status == 200) {"
+"      myFunction(this);"
+"    }"
+"  };"
+"  xhttp.open('GET','xml',true);"
+"  xhttp.send();"
+"  setTimeout('loadDoc()',500);"
+"}"
+
+"function myFunction(xml){"
+"  var i;"
+"  var xmlDoc = xml.responseXML;"
+"  var dato ='';"
+"  dato = xmlDoc.getElementsByTagName('TEMPERATURA')[0].childNodes[0].nodeValue;"
+"  document.getElementById('temperatura').innerHTML = dato;"
+"}"
+"</script>"
+"</head>"
+"<body onload='loadDoc()'>"
+"<h3> <a> - Umidade da carga: </a> <span> <a id='temperatura'></a> </span></h3>"
+"</body>"
+"</html>";
+
+void construirXML(){
+  XML="";
+  XML+="<TEMPERATURA>";
+  XML+=xmlTemperatura;
+  XML+="</TEMPERATURA>";
 }
 
-void handleNotFound() {
-
-  String message = "File Not Found\n\n";
-  message += "URI: ";
-  message += server.uri();
-  message += "\nMethod: ";
-  message += (server.method() == HTTP_GET) ? "GET" : "POST";
-  message += "\nArguments: ";
-  message += server.args();
-  message += "\n";
-  for (uint8_t i = 0; i < server.args(); i++) {
-    message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
-  }
-  server.send(404, "text/plain", message);
-  
+void handleWebsite(){
+  server.send(200,"text/html",webSite);
 }
 
-void setup(void) {
-  
+void handleXML(){
+  construirXML();
+  server.send(200,"text/xml",XML);
+}
+
+//---------------------------SETUP-------------------------------
+void setup() {
+
+  // Inicia Serial
   Serial.begin(115200);
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
   Serial.println("");
 
-  // Wait for connection
-  while (WiFi.status() != WL_CONNECTED) {
+  // Conexión WIFI
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED and contconexion <50) { 
+    ++contconexion;
     delay(500);
     Serial.print(".");
   }
-  Serial.println("");
-  Serial.print("Connected to ");
-  Serial.println(ssid);
-  Serial.print("IP address: ");
-  Serial.println(WiFi.localIP());
+  
 
-  if (MDNS.begin("esp8266")) {
-    Serial.println("MDNS responder started");
-  }
+      Serial.println("WiFi conectado");
+      Serial.println(WiFi.localIP());
 
-  server.on("/", handleRoot);
-
-  server.on("/inline", []() {
-    server.send(200, "text/plain", "this works as well");
-  });
-
-  server.onNotFound(handleNotFound);
-
+  server.on("/",handleWebsite);
+  server.on("/xml",handleXML);
   server.begin();
-  Serial.println("HTTP server started");
 }
 
-void loop(void) {
+//--------------------------LOOP--------------------------------
+void loop() {
+
+  unsigned long currentMillis = millis();
+
+  if (currentMillis - previousMillis >= 1000) { 
+    previousMillis = currentMillis;
+    int analog = analogRead(0);
+    float temp = analog;
+    xmlTemperatura = String(temp, 1); //1 decimal
+  }
+
+ 
   server.handleClient();
-  MDNS.update();
 }
