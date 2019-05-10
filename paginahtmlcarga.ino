@@ -6,8 +6,8 @@ ESP8266WebServer server(80);
 //-------------------VARIABLES GLOBALES--------------------------
 int contconexion = 0;
 
-const char *ssid = "TP-LINK_6642";
-const char *password = "40462929";
+const char *ssid = "matheuslima";
+const char *password = "M@theus123000";
 
 String XML, xmlTemperatura; 
 
@@ -124,10 +124,25 @@ void loop() {
   if (currentMillis - previousMillis >= 1000) { 
     previousMillis = currentMillis;
     int analog = analogRead(0);
-    float temp = analog;
-    xmlTemperatura = String(temp, 1); //1 decimal
+    analog = map(analog, 1023,0,0,100) * 2;
+     String valor = String(analog);
+    String aprovado = String("% - Aprovado");
+    String reprovado = String("% - Reprovado");
+    String testeteste = (valor + reprovado);
+
+    String teste = (valor + aprovado);
+   
+    Serial.print(valor);
+
+    if (analog < 15) {
+      xmlTemperatura = (teste);
+    } else {
+       xmlTemperatura = (testeteste); //1 decimal
+    }
+   
   }
 
  
   server.handleClient();
 }
+
