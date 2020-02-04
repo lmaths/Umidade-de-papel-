@@ -1,9 +1,8 @@
 #include <ESP8266WebServer.h>
 
-//---------------------------------------------------------------
+
 ESP8266WebServer server(80);
 
-//-------------------VARIABLES GLOBALES--------------------------
 int contconexion = 0;
 
 const char *ssid = "matheuslima";
@@ -13,7 +12,6 @@ String XML, xmlTemperatura;
 
 unsigned long previousMillis = 0;
 
-//--------CODIGO HTML y JavaScript-------------
 String webSite = "<!DOCTYPE html>"
 "<style>"
   "body {"
